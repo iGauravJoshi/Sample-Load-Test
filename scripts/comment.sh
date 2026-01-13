@@ -1,20 +1,36 @@
 #!/usr/bin/env bash
-set -e
+set -euo pipefail
 
-if [[ -z "$PR_NUMBER" || "$PR_NUMBER" == "null" ]]; then
-  echo "Not running in PR context, skipping comment"
+# Validate input
+if [[ $# -lt 1 || ! -f "$1" ]]; then
+  echo "Usage: $0 <result-file>"
+  exit 1
+fi
+
+# Ensure this is a PR event
+if [[ ! -f "$GITHUB_EVENT_PATH" ]]; then
+  echo "GITHUB_EVENT_PATH not set, skipping comment"
   exit 0
 fi
 
-RESULT=$(sed 's/"/\\"/g' "$1")
+PR_NUMBER=$(jq -r '.pull_request.number // empty' "$GITHUB_EVENT_PATH")
 
-BODY=$(jq -n --arg body "### 🚦 CI Load Test Results\n\`\`\`\n$RESULT\n\`\`\`" \
-  '{ body: $body }')
+if [[ -z "$PR_NUMBER" ]]; then
+  echo "Not a PR event, skipping comment"
+  exit 0
+fi
 
-PR_NUMBER=$(jq -r .pull_request.number "$GITHUB_EVENT_PATH")
+# Read result safely
+RESULT=$(cat "$1")
 
-curl -s -X POST \
-  -H "Authorization: token $GITHUB_TOKEN" \
+BODY=$(jq -n --arg body "### 🚦 CI Load Test Results
+\`\`\`
+$RESULT
+\`\`\`" \
+'{ body: $body }')
+
+curl -sS -X POST \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "Content-Type: application/json" \
   "https://api.github.com/repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/comments" \
   -d "$BODY"
