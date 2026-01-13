@@ -53,3 +53,10 @@ All components run entirely inside the CI runner to avoid external dependencies 
 
 ## Time Spent
 ~4 hours
+
+## Testing CI
+
+To validate the CI pipeline:
+1. Create a branch (e.g. `test/ci-loadtest`)
+2. Open a Pull Request to `main`
+3. Observe the CI job and PR comment with k6 results
