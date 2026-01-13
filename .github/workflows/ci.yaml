@@ -17,17 +17,23 @@ jobs:
 
       - name: Install tools
         run: |
+          set -euo pipefail
+
           sudo apt-get update
           sudo apt-get install -y curl jq
-          curl -Lo kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
-          chmod +x kind && sudo mv kind /usr/local/bin/
-          curl -Lo kubectl https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl
-          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+          curl -Lo /tmp/kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x /tmp/kind 
+          sudo mv /tmp/kind /usr/local/bin/kind
+
+          curl -Lo /tmp/kubectl https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl
+          chmod +x /tmp/kubectl
+          sudo mv /tmp/kubectl /usr/local/bin/kubectl
 
           K6_VERSION=1.5.0
-          curl -Lo k6.tar.gz https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz
-          tar -xzf k6.tar.gz
-          sudo mv k6-v${K6_VERSION}-linux-amd64/k6 /usr/local/bin/
+          curl -Lo /tmp/k6.tar.gz https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz
+          tar -xzf /tmp/k6.tar.gz -C /tmp
+          sudo mv /tmp/k6-v${K6_VERSION}-linux-amd64/k6 /usr/local/bin/
 
       - name: Create KinD cluster
         run: kind create cluster --config kind/kind-cluster.yaml --wait 180s
