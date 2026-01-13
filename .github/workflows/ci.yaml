@@ -1,0 +1,61 @@
+name: CI Load Test
+
+on:
+  pull_request:
+    branches: [ main ]
+
+permissions:
+  pull-requests: write
+  contents: read
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y curl jq
+          curl -Lo kind https://kind.sigs.k8s.io/dl/v0.23.0/kind-linux-amd64
+          chmod +x kind && sudo mv kind /usr/local/bin/
+          curl -Lo kubectl https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/kubectl
+          chmod +x kubectl && sudo mv kubectl /usr/local/bin/
+
+          K6_VERSION=1.5.0
+          curl -Lo k6.tar.gz https://github.com/grafana/k6/releases/download/v${K6_VERSION}/k6-v${K6_VERSION}-linux-amd64.tar.gz
+          tar -xzf k6.tar.gz
+          sudo mv k6-v${K6_VERSION}-linux-amd64/k6 /usr/local/bin/
+
+      - name: Create KinD cluster
+        run: kind create cluster --config kind/kind-cluster.yaml --wait 180s
+
+      - name: Install Ingress Controller
+        run: |
+          kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
+          ./scripts/wait.sh ingress-nginx
+
+      - name: Deploy workloads
+        run: |
+          set -euo pipefail
+          kubectl apply -f k8s/ || {
+            echo "❌ Failed to apply Kubernetes manifests"
+            exit 1
+          }
+          ./scripts/wait.sh default
+
+      - name: Verify ingress routing
+        run: |
+          curl -s -H "Host: foo.localhost" http://localhost | grep foo
+          curl -s -H "Host: bar.localhost" http://localhost | grep bar
+
+      - name: Run load test
+        run: |
+          k6 run loadtest/k6.js | tee result.txt
+
+      - name: Comment PR with results
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: ./scripts/comment.sh result.txt
