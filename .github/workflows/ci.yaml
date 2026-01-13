@@ -52,10 +52,16 @@ jobs:
           }
           ./scripts/wait.sh default
 
+      - name: Start ingress port-forward
+        run: |
+          kubectl -n ingress-nginx port-forward svc/ingress-nginx-controller 8080:80 &
+          echo $! > /tmp/pf.pid
+          sleep 5
+
       - name: Verify ingress routing
         run: |
-          curl -s -H "Host: foo.localhost" http://localhost | grep foo
-          curl -s -H "Host: bar.localhost" http://localhost | grep bar
+          curl -s -H "Host: foo.localhost" http://localhost:8080 | grep foo
+          curl -s -H "Host: bar.localhost" http://localhost:8080 | grep bar
 
       - name: Run load test
         run: |
@@ -65,3 +71,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/comment.sh result.txt
+      
+      - name: Stop port-forward
+        if: always()
+        run: |
+          kill $(cat /tmp/pf.pid) || true
