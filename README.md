@@ -54,9 +54,21 @@ All components run entirely inside the CI runner to avoid external dependencies 
 ## Time Spent
 ~4 hours
 
-## Testing CI
+## Sample CI Execution
 
-To validate the CI pipeline:
-1. Create a branch (e.g. `test/ci-loadtest`)
-2. Open a Pull Request to `main`
-3. Observe the CI job and PR comment with k6 results
+A sample Pull Request was created to demonstrate the CI workflow:
+
+- CI triggered on Pull Request
+- KinD cluster provisioned
+- NGINX Ingress deployed and validated
+- Host-based routing verified (`foo.localhost`, `bar.localhost`)
+- k6 load test executed
+- Load test results posted back to the PR as a comment
+
+Artifacts from the sample run are available under `ci-sample/`:
+
+- `ci-run.png` – Successful GitHub Actions workflow execution
+- `pr-sample.png` – Sample Pull Request with CI comment
+- `ci-results.txt` – Full k6 load test output
+
+The full k6 output is stored as a text file to keep the PR comment readable while preserving complete results.
