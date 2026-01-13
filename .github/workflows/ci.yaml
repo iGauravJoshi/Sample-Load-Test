@@ -61,8 +61,8 @@ jobs:
 
       - name: Verify ingress routing
         run: |
-          curl -s -H "Host: foo.localhost" http://localhost:8080 | grep foo
-          curl -s -H "Host: bar.localhost" http://localhost:8080 | grep bar
+          curl -sf -H "Host: foo.localhost" http://localhost:8080 | grep foo
+          curl -sf -H "Host: bar.localhost" http://localhost:8080 | grep bar
 
       - name: Run load test
         run: |
